@@ -7,6 +7,8 @@ import argparse # cmd에 실행 시 arg parsing
 from utils.tools import *
 from dataloader.yolodata import *
 from dataloader.data_transforms import *
+from model.yolov3 import *
+from train.trainer import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description="YOLOV3_PYTORCH arguments")
@@ -32,13 +34,23 @@ def train(cfg_param = None, using_gpus = None):
                               batch_size = cfg_param['batch'],
                               num_workers = 0,
                               pin_memory = True,
-                              drop_last = False, # 6081개의 이미지를 batch_size = 4로 학습시킬 때 1개가 남을 시 다음 epoch에 포함시킬지 여부
+                              drop_last = True, # 6081개의 이미지를 batch_size = 4로 학습시킬 때 1개가 남을 시 다음 epoch에 포함시킬지 여부
                               shuffle = True)
                               #collate_fn = )   # __getitem__으로부터 받은 image를 batch_size 수만큼 묶어줌
-    for i, batch in enumerate(train_loader):
-        img, targets, anno_path = batch
-        print("iter {}, img {}, targets {}, anno_path {}".format(i, img.shape, targets.shape, anno_path))
-        drawBox(img[0].detach().cpu())
+
+    model = Darknet53(args.cfg, cfg_param, training = True)
+    model.train()
+    model.initialize_weights()
+
+    # set device
+    if torch.cuda.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
+    model = model.to(device)
+    
+    trainer = Trainer(model = model, train_loader = train_loader, eval_loader = None, hparam = cfg_param, device = device)
+    trainer.run()
 
 def eval(cfg_param = None, using_gpus = None):
     print("evaluation")

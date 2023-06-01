@@ -88,25 +88,25 @@ class Yolodata(Dataset):
 
                     bbox.append([cls, cx, cy, w, h])
                 
-                bbox = np.array(bbox)
+            bbox = np.array(bbox)
 
-                # skip emtpy target
-                empty_target = False
+            # skip emtpy target
+            empty_target = False
 
-                if bbox.shape[0] == 0:
-                    empty_target = True
-                    bbox = np.array([[0, 0, 0, 0, 0]])
+            if bbox.shape[0] == 0:
+                empty_target = True
+                bbox = np.array([[0, 0, 0, 0, 0]])
 
-                # data augmentation
-                if self.transform is not None:
-                    img, bbox = self.transform((img, bbox))
+            # data augmentation
+            if self.transform is not None:
+                img, bbox = self.transform((img, bbox))
 
-                if not empty_target:
-                    batch_idx = torch.zeros(bbox.shape[0])
-                    target_data = torch.cat((batch_idx.view(-1, 1), torch.tensor(bbox)), dim = 1)
-                else:
-                    return
-                return img, target_data, anno_path
+            if not empty_target:
+                batch_idx = torch.zeros(bbox.shape[0])
+                target_data = torch.cat((batch_idx.view(-1, 1), torch.tensor(bbox)), dim = 1)
+            else:
+                return
+            return img, target_data, anno_path
 
         else:
             bbox = np.array([[0, 0, 0, 0, 0]])
