@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
+import torch
 
 # parse model layer configuration
 def parse_model_config(path):
@@ -104,3 +105,30 @@ def drawBox(img):
 
     plt.imshow(img_data)
     plt.show()
+
+def bbox_iou(box1, box2, xyxy = False, eps = 1e-9):
+    box = box2.T
+
+    if xyxy:
+        b1_x1, b1_y1, b1_x2, b1_y2 = box1[0], box1[1], box1[2], box1[3]
+        b2_x1, b2_y1, b2_x2, b2_y2 = box2[0], box2[1], box2[2], box2[3]
+    else:
+        b1_x1, b1_y1 = box1[0] - box1[2] / 2, box1[1] - box1[3] / 2
+        b1_x2, b1_y2 = box1[0] + box1[2] / 2, box1[1] + box1[3] / 2
+
+        b2_x1, b2_y1 = box2[0] - box2[2] / 2, box2[1] - box2[3] / 2
+        b2_x2, b2_y2 = box2[0] + box2[2] / 2, box2[1] + box2[3] / 2
+
+    # intersection
+    inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * \
+             (torch.min(b1_y2, b2_y2) - torch.max(b2_y1, b2_y1)).clamp(0)
+
+    # union
+    b1_w, b1_h = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
+    b2_w, b2_h = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
+
+    union = b1_w * b1_h + b2_w * b2_h - inter + eps
+
+    iou = inter / union
+
+    return iou
