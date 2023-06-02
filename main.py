@@ -10,6 +10,8 @@ from dataloader.data_transforms import *
 from model.yolov3 import *
 from train.trainer import *
 
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="YOLOV3_PYTORCH arguments")
     parser.add_argument("--gpus", type = int, help = "List of GPU device id", default = [], nargs='+')
@@ -23,6 +25,25 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def collate_fn(batch):
+    batch = [data for data in batch if data is not None]
+    
+    # skip invalid data
+    if len(batch) == 0:
+        return
+    
+    imgs, targets, anno_path = list(zip(*batch))
+
+    imgs = torch.stack([img for img in imgs])
+
+    for i, boxes in enumerate(targets):
+        # insert index of batch
+        boxes[:, 0] = i
+        print(boxes)
+    targets = torch.cat(targets, 0)
+
+    return imgs, targets, anno_path
+
 def train(cfg_param = None, using_gpus = None):
     print("train")
     # data loader
@@ -35,8 +56,8 @@ def train(cfg_param = None, using_gpus = None):
                               num_workers = 0,
                               pin_memory = True,
                               drop_last = True, # 6081개의 이미지를 batch_size = 4로 학습시킬 때 1개가 남을 시 다음 epoch에 포함시킬지 여부
-                              shuffle = True)
-                              #collate_fn = )   # __getitem__으로부터 받은 image를 batch_size 수만큼 묶어줌
+                              shuffle = True,
+                              collate_fn = collate_fn)   # __getitem__으로부터 받은 image를 batch_size 수만큼 묶어줌
 
     model = Darknet53(args.cfg, cfg_param, training = True)
     model.train()
@@ -47,8 +68,9 @@ def train(cfg_param = None, using_gpus = None):
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu")
-    model = model.to(device)
     
+    print("device : ", device)
+    model = model.to(device)
     trainer = Trainer(model = model, train_loader = train_loader, eval_loader = None, hparam = cfg_param, device = device)
     trainer.run()
 
@@ -59,6 +81,8 @@ def demo(cfg_param = None, using_gpus = None):
     print("demo")
 
 if __name__ == "__main__":
+    os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
     args = parse_args()
 
     # cfg parser
