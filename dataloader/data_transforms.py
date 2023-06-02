@@ -20,6 +20,7 @@ def get_transformations(cfg_param = None, is_train = None):
     # tf.Compose: augmentation 방식들을 하나로 묶어 transform에서 실제 사용할 때 하나의 func로 사용할 수 있음
     else:
         data_transform = tf.Compose([AbsoluteLabels(),
+                                     ResizeImage(new_size = (cfg_param['in_width'], cfg_param['in_height'])),
                                      RelativeLabels()])
     return data_transform
 
